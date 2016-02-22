@@ -29,9 +29,10 @@ enum { // processor fault codes
 };
 
 char pg_mem[6 * 4096]; // page dir + 4 entries + alignment
+char task_kstack[1000], task_stack[1000];
 
 int *pg_dir, *pg0, *pg1, *pg2, *pg3;
-
+int *user_task_sp;
 int current;
 
 int in(port)    { asm(LL,8); asm(BIN); }
@@ -103,8 +104,10 @@ trap(int c, int b, int a, int fc, int pc)
   case FMEM:   printf("FMEM [0x%08x]",lvadr()); break;
   case FTIMER: printf("FTIMER"); current = 1; stmr(0); break;
   case FKEYBD: printf("FKEYBD [%c]", in(0)); break;
-  case FPRIV: printf("FPRIV"); break;
-  case USER: printf("USER"); break;
+  case FPRIV:  printf("FPRIV"); break;
+  case USER:   printf("USER"); break;
+  case FPRIV + USER:
+               printf("FPRIV + USER\n"); break;
   default:     printf("other [%d]",fc); break;
   }
 }
@@ -115,6 +118,20 @@ alltraps()
   asm(PSHB);
   asm(PSHC);
   trap();
+  asm(POPC);
+  asm(POPB);
+  asm(POPA);
+  asm(RTI);
+}
+
+task()
+{
+  asm(IDLE);
+}
+
+trapret()
+{
+  asm(POPA); asm(SUSP);
   asm(POPC);
   asm(POPB);
   asm(POPA);
@@ -146,7 +163,8 @@ setup_paging()
 main()
 {
   int t, d; 
-  
+  int *kstack;
+
   current = 0;
   ivec(alltraps);
   
@@ -191,5 +209,18 @@ main()
   asm(IDLE);
   printf("...ok\n");
 
-  halt(0);
+  printf("test privileged instruction in user mode...");
+  user_task_sp = &task_kstack[1000];
+  user_task_sp -= 2; *user_task_sp = &task;
+  user_task_sp -= 2; *user_task_sp = USER;
+  user_task_sp -= 2; *user_task_sp = 0; // a
+  user_task_sp -= 2; *user_task_sp = 0; // b
+  user_task_sp -= 2; *user_task_sp = 0; // c
+  user_task_sp -= 2; *user_task_sp = &task_stack[1000];
+  user_task_sp -= 2; *user_task_sp = &trapret;
+  kstack = user_task_sp;
+  
+  asm(LL, 4); // a = kstack
+  asm(SSP);   // sp = a
+  asm(LEV);
 }
