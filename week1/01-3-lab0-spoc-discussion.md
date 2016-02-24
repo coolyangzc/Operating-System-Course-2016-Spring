@@ -265,16 +265,19 @@ git pull os_course_spoc_exercise
    - funcall中的全局变量ret放在内存中何处？如何对它寻址？
 
         0xac        
+        
         pc + 0x8c(相对寻址)
 
    - funcall中的字符串放在内存中何处？如何对它寻址？
 
         0x90
+        
         pc + 0x1c(相对寻址)
 
    - 局部变量i在内存中的何处？如何对它寻址？
         
         0x7bfffdc     
+
         sp + 0x4(相对寻址)
 
    - 当前系统是处于中断使能状态吗？
