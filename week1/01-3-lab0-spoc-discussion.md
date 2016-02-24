@@ -264,20 +264,17 @@ git pull os_course_spoc_exercise
 
    - funcall中的全局变量ret放在内存中何处？如何对它寻址？
 
-        0xac        
-        
+        0xac       
         pc + 0x8c(相对寻址)
 
    - funcall中的字符串放在内存中何处？如何对它寻址？
 
         0x90
-        
         pc + 0x1c(相对寻址)
 
    - 局部变量i在内存中的何处？如何对它寻址？
         
         0x7bfffdc     
-
         sp + 0x4(相对寻址)
 
    - 当前系统是处于中断使能状态吗？
@@ -287,6 +284,7 @@ git pull os_course_spoc_exercise
    - funcall中的函数参数是如何传递的？函数返回值是如何传递的？
 
         参数按从右到左的顺序压栈，然后压入当前PC，最后跳转。
+        
         函数返回值存在a寄存器中。
         
    - 分析并说明funcall执行文件的格式和内容
