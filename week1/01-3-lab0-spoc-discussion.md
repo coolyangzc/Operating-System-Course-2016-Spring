@@ -269,7 +269,7 @@ git pull os_course_spoc_exercise
 
    - funcall中的字符串放在内存中何处？如何对它寻址？
 
-        0x90
+        0x90	
         pc + 0x1c(相对寻址)
 
    - 局部变量i在内存中的何处？如何对它寻址？
