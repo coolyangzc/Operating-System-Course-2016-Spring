@@ -136,205 +136,199 @@ SETGATE(intr, 0,1,2,3);
 ```
 sudo apt-get install hexedit
 cd YOUR v9-cpu DIR
-git pull v9-cpu 
+git pull 
 cd YOUR os_course_spoc_exercise DIR
-git pull os_course_spoc_exercise
+git pull 
 ```
 
 分析和实验funcall.c，需要完成的内容包括： 
 -[X]
 
  - 修改代码，可正常显示小组两位同学的学号（用字符串） 
-
-    ret = write(1, "2013011377 2013011359",22);        
-
  - 生成funcall.c的汇编码，理解其实现并给汇编码写注释
-
-        root/usr/funcall.c  1: #include <u.h>
-	    root/lib/u.h  1: // u.h
-	    root/lib/u.h  2: 
-	    root/lib/u.h  3: // instruction set
-	    root/lib/u.h  4: enum {
-	    root/lib/u.h  5:   HALT,ENT ,LEV ,JMP ,JMPI,JSR ,JSRA,LEA ,LEAG,CYC ,MCPY,MCMP,MCHR,MSET, // system
-	    root/lib/u.h  6:   LL  ,LLS ,LLH ,LLC ,LLB ,LLD ,LLF ,LG  ,LGS ,LGH ,LGC ,LGB ,LGD ,LGF , // load a
-	    root/lib/u.h  7:   LX  ,LXS ,LXH ,LXC ,LXB ,LXD ,LXF ,LI  ,LHI ,LIF ,
-	    root/lib/u.h  8:   LBL ,LBLS,LBLH,LBLC,LBLB,LBLD,LBLF,LBG ,LBGS,LBGH,LBGC,LBGB,LBGD,LBGF, // load b
-	    root/lib/u.h  9:   LBX ,LBXS,LBXH,LBXC,LBXB,LBXD,LBXF,LBI ,LBHI,LBIF,LBA ,LBAD,
-	    root/lib/u.h  10:   SL  ,SLH ,SLB ,SLD ,SLF ,SG  ,SGH ,SGB ,SGD ,SGF ,                     // store
-	    root/lib/u.h  11:   SX  ,SXH ,SXB ,SXD ,SXF ,
-	    root/lib/u.h  12:   ADDF,SUBF,MULF,DIVF,                                                   // arithmetic
-	    root/lib/u.h  13:   ADD ,ADDI,ADDL,SUB ,SUBI,SUBL,MUL ,MULI,MULL,DIV ,DIVI,DIVL,
-	    root/lib/u.h  14:   DVU ,DVUI,DVUL,MOD ,MODI,MODL,MDU ,MDUI,MDUL,AND ,ANDI,ANDL,
-	    root/lib/u.h  15:   OR  ,ORI ,ORL ,XOR ,XORI,XORL,SHL ,SHLI,SHLL,SHR ,SHRI,SHRL,
-	    root/lib/u.h  16:   SRU ,SRUI,SRUL,EQ  ,EQF ,NE  ,NEF ,LT  ,LTU ,LTF ,GE  ,GEU ,GEF ,      // logical
-	    root/lib/u.h  17:   BZ  ,BZF ,BNZ ,BNZF,BE  ,BEF ,BNE ,BNEF,BLT ,BLTU,BLTF,BGE ,BGEU,BGEF, // conditional
-	    root/lib/u.h  18:   CID ,CUD ,CDI ,CDU ,                                                   // conversion
-	    root/lib/u.h  19:   CLI ,STI ,RTI ,BIN ,BOUT,NOP ,SSP ,PSHA,PSHI,PSHF,PSHB,POPB,POPF,POPA, // misc
-	    root/lib/u.h  20:   IVEC,PDIR,SPAG,TIME,LVAD,TRAP,LUSP,SUSP,LCL ,LCA ,PSHC,POPC,MSIZ,
-	    root/lib/u.h  21:   PSHG,POPG,NET1,NET2,NET3,NET4,NET5,NET6,NET7,NET8,NET9,
-	    root/lib/u.h  22:   POW ,ATN2,FABS,ATAN,LOG ,LOGT,EXP ,FLOR,CEIL,HYPO,SIN ,COS ,TAN ,ASIN, // math
-	    root/lib/u.h  23:   ACOS,SINH,COSH,TANH,SQRT,FMOD,
-	    root/lib/u.h  24:   IDLE
-	    root/lib/u.h  25: };
-	    root/lib/u.h  26: 
-	    root/lib/u.h  27: // system calls
-	    root/lib/u.h  28: enum {
-	    root/lib/u.h  29:   S_fork=1, S_exit,   S_wait,   S_pipe,   S_write,  S_read,   S_close,  S_kill,
-	    root/lib/u.h  30:   S_exec,   S_open,   S_mknod,  S_unlink, S_fstat,  S_link,   S_mkdir,  S_chdir,
-	    root/lib/u.h  31:   S_dup2,   S_getpid, S_sbrk,   S_sleep,  S_uptime, S_lseek,  S_mount,  S_umount,
-	    root/lib/u.h  32:   S_socket, S_bind,   S_listen, S_poll,   S_accept, S_connect, 
-	    root/lib/u.h  33: };
-	    root/lib/u.h  34: 
-	    root/lib/u.h  35: typedef unsigned char uchar;
-	    root/lib/u.h  36: typedef unsigned short ushort;
-	    root/lib/u.h  37: typedef unsigned int uint;
-	    root/lib/u.h  38: 
-	    root/usr/funcall.c  2: int ret;
-	    root/usr/funcall.c  3: out(port, val)
-	    root/usr/funcall.c  4: {
-	    root/usr/funcall.c  5:   asm(LL,8);   // load register a with port
-	    00000000  0000080e  LL    0x8 (D 8)
-	    root/usr/funcall.c  6:   asm(LBL,16); // load register b with val
-	    00000004  00001026  LBL   0x10 (D 16)
-	    root/usr/funcall.c  7:   asm(BOUT);   // output byte to console
-	    00000008  0000009a  BOUT
-	    root/usr/funcall.c  8: }
-	    root/usr/funcall.c  9: 
-	    root/usr/funcall.c  10: int write(int f, char *s, int n)
-	    0000000c  00000002  LEV   0x0 (D 0)
-	    root/usr/funcall.c  11: {
-	    root/usr/funcall.c  12:   int i;
-	    root/usr/funcall.c  13:   ret = 1;
-	    00000010  fffff801  ENT   0xfffffff8 (D -8)		// sp += operand0
-	    00000014  00000123  LI    0x1 (D 1)				// a = operand0
-	    00000018  00000045  SG    0x0 (D 0)				// *(global_addr)=a; global_addr = operand0 + pc
-	    root/usr/funcall.c  14:   i=n;					
-	    0000001c  0000200e  LL    0x20 (D 32)			// a=content(local_addr) ; local addr= operand0 + sp
-	    00000020  00000440  SL    0x4 (D 4)				// *(local_addr)=a; local_addr = operand0 + sp
-	    root/usr/funcall.c  15:   while (i--)
-	    00000024  00000003  JMP   <fwd>
-	    root/usr/funcall.c  16:     out(f, *s++);
-	    00000028  0000180e  LL    0x18 (D 24)			// a=content(local_addr) ; local addr= operand0 + sp
-	    0000002c  ffffff57  SUBI  0xffffffff (D -1)
-	    00000030  00001840  SL    0x18 (D 24)			// *(local_addr)=a; local_addr = operand0 + sp
-	    00000034  ffffff1f  LXC   0xffffffff (D -1)		// a=content(virt_addr); virt_addr = vir2phy(operand0)
-	    00000038  0000009d  PSHA						// sp -= 8, *sp = a
-	    0000003c  0000180e  LL    0x18 (D 24)
-	    00000040  0000009d  PSHA						// sp -= 8, *sp = a
-	    00000044  ffffb805  JSR   0xffffffb8 (TO 0x0)
-	    00000048  00001001  ENT   0x10 (D 16)			// sp += operand0
-	    root/usr/funcall.c  17:   return i;
-	    0000004c  0000040e  LL    0x4 (D 4)				// a=content(local_addr) ; local addr= operand0 + sp
-	    00000050  00000157  SUBI  0x1 (D 1)
-	    00000054  00000440  SL    0x4 (D 4)
-	    00000058  00000154  ADDI  0x1 (D 1)
-	    0000005c  00000086  BNZ   <fwd>
-	    00000060  0000040e  LL    0x4 (D 4)				// a=content(local_addr) ; local addr= operand0 + sp
-	    00000064  00000802  LEV   0x8 (D 8)				// pc= *sp, sp + = operand0+8,
-	    root/usr/funcall.c  18: }  
-	    root/usr/funcall.c  19: 
-	    root/usr/funcall.c  20: main()
-	    00000068  00000802  LEV   0x8 (D 8)
-	    root/usr/funcall.c  21: {
-	    root/usr/funcall.c  22: 
-	    root/usr/funcall.c  23:   //Change S1/S2 ID to your student ID, and change 12 to new str length
-	    root/usr/funcall.c  24:   ret = write(1, "2013011377 2013011359",22);
-	    0000006c  0000169e  PSHI  0x16 (D 22) 			// sp -= 8, *sp = operand0
-	    00000070  00000008  LEAG  0x0 (D 0) 			// a = pc + operand0
-	    00000074  0000009d  PSHA						// sp -= 8, *sp = a
-	    00000078  0000019e  PSHI  0x1 (D 1)				// sp -= 8, *sp = operand0
-	    0000007c  ffff9005  JSR   0xffffff90 (TO 0x10)	// save current pc, *sp=pc, sp -= 8; jump to operand0 OR pc+=operand0.
-	    00000080  00001801  ENT   0x18 (D 24)			// sp += operand0
-	    00000084  00000045  SG    0x0 (D 0)				// *(global_addr)=a; global_addr = operand0 + pc
-	    root/usr/funcall.c  25:   asm(HALT);
-	    00000088  00000000  HALT
-	    root/usr/funcall.c  26: }
-	    root/usr/funcall.c  27: 
-	    0000008c  00000002  LEV   0x0 (D 0)				// pc= *sp, sp + = operand0+8,
-
-
  - 尝试用xem的简单调试功能单步调试代码
-
-        ./xem -g funcall
-
  - 回答如下问题：
    - funcall中的堆栈有多大？是内核态堆栈还是用户态堆栈
-
-        128M - 4M - 184B，内核态
-
    - funcall中的全局变量ret放在内存中何处？如何对它寻址？
-
-        0xac       
-        pc + 0x8c(相对寻址)
-
    - funcall中的字符串放在内存中何处？如何对它寻址？
-
-        0x90	
-        pc + 0x1c(相对寻址)
-
    - 局部变量i在内存中的何处？如何对它寻址？
-        
-        0x7bfffdc     
-        sp + 0x4(相对寻址)
-
    - 当前系统是处于中断使能状态吗？
-
-        否        
-
    - funcall中的函数参数是如何传递的？函数返回值是如何传递的？
-
-        参数按从右到左的顺序压栈，然后压入当前PC，最后跳转。
-        
-        函数返回值存在a寄存器中。
-        
    - 分析并说明funcall执行文件的格式和内容
-
-
-        小端序
-		
-		00000000   0D F0 DE C0  08 00 00 00  6C 00 00 00  00 00 00 00  ........l.......
-		
-		00000010   0E 08 00 00  26 10 00 00  9A 00 00 00  02 00 00 00  ....&...........
-		
-		00000020   01 F8 FF FF  23 01 00 00  45 8C 00 00  0E 20 00 00  ....#...E.... ..
-		
-		00000030   40 04 00 00  03 24 00 00  0E 18 00 00  57 FF FF FF  @....$......W...
-		
-		00000040   40 18 00 00  1F FF FF FF  9D 00 00 00  0E 18 00 00  @...............
-		
-		00000050   9D 00 00 00  05 B8 FF FF  01 10 00 00  0E 04 00 00  ................
-		
-		00000060   57 01 00 00  40 04 00 00  54 01 00 00  86 C8 FF FF  W...@...T.......
-		
-		00000070   0E 04 00 00  02 08 00 00  02 08 00 00  9E 16 00 00  ................
-		
-		00000080   08 1C 00 00  9D 00 00 00  9E 01 00 00  05 90 FF FF  ................
-		
-		00000090   01 18 00 00  45 20 00 00  00 00 00 00  02 00 00 00  ....E ..........
-		
-		000000A0   32 30 31 33  30 31 31 33  37 37 20 32  30 31 33 30  2013011377 20130
-		
-		000000B0   31 31 33 35  39 00 00 00                            11359...
-		
-		　
+　
 
 分析和实验os0.c，需要完成的内容包括： 
 -[X]
-
  - 生成os0.c的汇编码，理解其实现并给汇编码写注释
+ 
+ ./xc -s -Iroot/lib root/usr/os/os0.c > os0.txt
+```
+  root/usr/os/os0.c  1: // os0.c -- simple timer isr test
+  root/usr/os/os0.c  2: 
+  root/usr/os/os0.c  3: #include <u.h>
+  root/lib/u.h  1: // u.h
+  root/lib/u.h  2: 
+  root/lib/u.h  3: // instruction set
+  root/lib/u.h  4: enum {
+  root/lib/u.h  5:   HALT,ENT ,LEV ,JMP ,JMPI,JSR ,JSRA,LEA ,LEAG,CYC ,MCPY,MCMP,MCHR,MSET, // system
+  root/lib/u.h  6:   LL  ,LLS ,LLH ,LLC ,LLB ,LLD ,LLF ,LG  ,LGS ,LGH ,LGC ,LGB ,LGD ,LGF , // load a
+  root/lib/u.h  7:   LX  ,LXS ,LXH ,LXC ,LXB ,LXD ,LXF ,LI  ,LHI ,LIF ,
+  root/lib/u.h  8:   LBL ,LBLS,LBLH,LBLC,LBLB,LBLD,LBLF,LBG ,LBGS,LBGH,LBGC,LBGB,LBGD,LBGF, // load b
+  root/lib/u.h  9:   LBX ,LBXS,LBXH,LBXC,LBXB,LBXD,LBXF,LBI ,LBHI,LBIF,LBA ,LBAD,
+  root/lib/u.h  10:   SL  ,SLH ,SLB ,SLD ,SLF ,SG  ,SGH ,SGB ,SGD ,SGF ,                     // store
+  root/lib/u.h  11:   SX  ,SXH ,SXB ,SXD ,SXF ,
+  root/lib/u.h  12:   ADDF,SUBF,MULF,DIVF,                                                   // arithmetic
+  root/lib/u.h  13:   ADD ,ADDI,ADDL,SUB ,SUBI,SUBL,MUL ,MULI,MULL,DIV ,DIVI,DIVL,
+  root/lib/u.h  14:   DVU ,DVUI,DVUL,MOD ,MODI,MODL,MDU ,MDUI,MDUL,AND ,ANDI,ANDL,
+  root/lib/u.h  15:   OR  ,ORI ,ORL ,XOR ,XORI,XORL,SHL ,SHLI,SHLL,SHR ,SHRI,SHRL,
+  root/lib/u.h  16:   SRU ,SRUI,SRUL,EQ  ,EQF ,NE  ,NEF ,LT  ,LTU ,LTF ,GE  ,GEU ,GEF ,      // logical
+  root/lib/u.h  17:   BZ  ,BZF ,BNZ ,BNZF,BE  ,BEF ,BNE ,BNEF,BLT ,BLTU,BLTF,BGE ,BGEU,BGEF, // conditional
+  root/lib/u.h  18:   CID ,CUD ,CDI ,CDU ,                                                   // conversion
+  root/lib/u.h  19:   CLI ,STI ,RTI ,BIN ,BOUT,NOP ,SSP ,PSHA,PSHI,PSHF,PSHB,POPB,POPF,POPA, // misc
+  root/lib/u.h  20:   IVEC,PDIR,SPAG,TIME,LVAD,TRAP,LUSP,SUSP,LCL ,LCA ,PSHC,POPC,MSIZ,
+  root/lib/u.h  21:   PSHG,POPG,NET1,NET2,NET3,NET4,NET5,NET6,NET7,NET8,NET9,
+  root/lib/u.h  22:   POW ,ATN2,FABS,ATAN,LOG ,LOGT,EXP ,FLOR,CEIL,HYPO,SIN ,COS ,TAN ,ASIN, // math
+  root/lib/u.h  23:   ACOS,SINH,COSH,TANH,SQRT,FMOD,
+  root/lib/u.h  24:   IDLE
+  root/lib/u.h  25: };
+  root/lib/u.h  26: 
+  root/lib/u.h  27: // system calls
+  root/lib/u.h  28: enum {
+  root/lib/u.h  29:   S_fork=1, S_exit,   S_wait,   S_pipe,   S_write,  S_read,   S_close,  S_kill,
+  root/lib/u.h  30:   S_exec,   S_open,   S_mknod,  S_unlink, S_fstat,  S_link,   S_mkdir,  S_chdir,
+  root/lib/u.h  31:   S_dup2,   S_getpid, S_sbrk,   S_sleep,  S_uptime, S_lseek,  S_mount,  S_umount,
+  root/lib/u.h  32:   S_socket, S_bind,   S_listen, S_poll,   S_accept, S_connect, 
+  root/lib/u.h  33: };
+  root/lib/u.h  34: 
+  root/lib/u.h  35: typedef unsigned char uchar;
+  root/lib/u.h  36: typedef unsigned short ushort;
+  root/lib/u.h  37: typedef unsigned int uint;
+  root/lib/u.h  38: 
+  root/usr/os/os0.c  4: 
+  root/usr/os/os0.c  5: int current;
+  root/usr/os/os0.c  6: 
+  root/usr/os/os0.c  7: out(port, val)  { asm(LL,8); asm(LBL,16); asm(BOUT); }
+  00000000  0000080e  LL    0x8 (D 8) //a=*(sp+8)
+  00000004  00001026  LBL   0x10 (D 16) //b=*(sp+16)
+  00000008  0000009a  BOUT // a = write(a, &b, 1);
+  root/usr/os/os0.c  8: ivec(void *isr) { asm(LL,8); asm(IVEC); }
+  0000000c  00000002  LEV   0x0 (D 0) // pc= *sp, sp + = 8
+  00000010  0000080e  LL    0x8 (D 8) // a=*(sp+8)
+  00000014  000000a4  IVEC // ivec = a, set interrupt vector by a
+  root/usr/os/os0.c  9: stmr(int val)   { asm(LL,8); asm(TIME); }
+  00000018  00000002  LEV   0x0 (D 0) // pc= *sp, sp + = 8
+  0000001c  0000080e  LL    0x8 (D 8) // a=*(sp+8)
+  00000020  000000a7  TIME // set current timeout from a
+  root/usr/os/os0.c  10: halt(val)       { asm(LL,8); asm(HALT); }
+  00000024  00000002  LEV   0x0 (D 0) // pc= *sp, sp + = 8
+  00000028  0000080e  LL    0x8 (D 8) // a=*(sp+8)
+  0000002c  00000000  HALT //halt system
+  root/usr/os/os0.c  11: 
+  root/usr/os/os0.c  12: alltraps()
+  00000030  00000002  LEV   0x0 (D 0) // pc= *sp, sp + = 8
+  root/usr/os/os0.c  13: {
+  root/usr/os/os0.c  14:   asm(PSHA);
+  00000034  0000009d  PSHA // sp -= 8, *sp = a
+  root/usr/os/os0.c  15:   asm(PSHB);
+  00000038  000000a0  PSHB // sp -= 8, *sp = b
+  root/usr/os/os0.c  16: 
+  root/usr/os/os0.c  17:   current++;
+  0000003c  00000015  LG    0x0 (D 0) //a=*(pc+0)
+  00000040  ffffff57  SUBI  0xffffffff (D -1) //a-=1
+  00000044  00000045  SG    0x0 (D 0) //*(pc+0)=a
+  root/usr/os/os0.c  18: 
+  root/usr/os/os0.c  19:   asm(POPB);
+  00000048  000000a1  POPB // b = *sp, sp += 8
+  root/usr/os/os0.c  20:   asm(POPA);
+  0000004c  000000a3  POPA // a = *sp, sp += 8
+  root/usr/os/os0.c  21:   asm(RTI);
+  00000050  00000098  RTI //open interrupt
+  root/usr/os/os0.c  22: }
+  root/usr/os/os0.c  23: 
+  root/usr/os/os0.c  24: main()
+  00000054  00000002  LEV   0x0 (D 0) // pc= *sp, sp + = 8
+  root/usr/os/os0.c  25: {
+  root/usr/os/os0.c  26:   current = 0;
+  00000058  00000023  LI    0x0 (D 0) //a=0
+  0000005c  00000045  SG    0x0 (D 0) //*(pc+0)=a
+  root/usr/os/os0.c  27: 
+  root/usr/os/os0.c  28:   stmr(1000);
+  00000060  0003e89e  PSHI  0x3e8 (D 1000) // sp -= 8, *sp = 0x3e8
+  00000064  ffffb405  JSR   0xffffffb4 (TO 0x1c) // save current pc, *sp=pc, sp -= 8; jump to 0x1c
+  00000068  00000801  ENT   0x8 (D 8) //sp += 8
+  root/usr/os/os0.c  29:   ivec(alltraps);
+  0000006c  ffffc408  LEAG  0xffffffc4 (D -60) // a = pc - 60
+  00000070  0000009d  PSHA // sp -= 8, *sp = a
+  00000074  ffff9805  JSR   0xffffff98 (TO 0x10)// save current pc, *sp=pc, sp -= 8; jump to 0x10
+  00000078  00000801  ENT   0x8 (D 8) //sp += 8
+  root/usr/os/os0.c  30:   
+  root/usr/os/os0.c  31:   asm(STI); 
+  0000007c  00000097  STI // if generated by hardware: set trap, and process the interrupt; else: iena = 1 -- set interrupt flag
+  root/usr/os/os0.c  32:   
+  root/usr/os/os0.c  33:   while (current < 10) {
+  00000080  00000003  JMP   <fwd> //pc+=fwd
+  root/usr/os/os0.c  34:     if (current & 1) out(1, '1'); else out(1, '0');
+  00000084  00000015  LG    0x0 (D 0) //a=*(pc+0)
+  00000088  00000169  ANDI  0x1 (D 1) //a&=1
+  0000008c  00000084  BZ    <fwd>  // branch to fwd if a/f is zero
+  00000090  0000319e  PSHI  0x31 (D 49) // sp -= 8, *sp = 0x31
+  00000094  0000019e  PSHI  0x1 (D 1) // sp -= 8, *sp = 0x1
+  00000098  ffff6405  JSR   0xffffff64 (TO 0x0)// save current pc, *sp=pc, sp -= 8; jump to 0
+  0000009c  00001001  ENT   0x10 (D 16) // sp += 16
+  000000a0  00000003  JMP   <fwd> //pc+=fwd
+  000000a4  0000309e  PSHI  0x30 (D 48) // sp -= 8, *sp = 0x30
+  000000a8  0000019e  PSHI  0x1 (D 1) // sp -= 8, *sp = 0x1
+  000000ac  ffff5005  JSR   0xffffff50 (TO 0x0)// save current pc, *sp=pc, sp -= 8; jump to 0
+  000000b0  00001001  ENT   0x10 (D 16)// sp += 16
+  root/usr/os/os0.c  35:   }
+  root/usr/os/os0.c  36: 
+  root/usr/os/os0.c  37:   halt(0);
+  000000b4  00000015  LG    0x0 (D 0)//a=*(pc+0)
+  000000b8  00000a3b  LBI   0xa (D 10)//b=10
+  000000bc  0000008c  BLT   <fwd>//branch to operand0 if a < b
+  000000c0  0000009e  PSHI  0x0 (D 0)// sp -= 8, *sp = 0x0
+  000000c4  ffff6005  JSR   0xffffff60 (TO 0x28)// save current pc, *sp=pc, sp -= 8; jump to 0x28
+  000000c8  00000801  ENT   0x8 (D 8)// sp += 8
+  root/usr/os/os0.c  38: }
+  root/usr/os/os0.c  39: 
+  000000cc  00000002  LEV   0x0 (D 0)// pc= *sp, sp + = 8
+  ```
+  
  - 尝试用xem的简单调试功能单步调试代码
+ 
+ ./xem -g os0
  - 回答如下问题：
    - 何处设置的中断使能？   
+   
+    asm(STI)设置中断使能
    - 系统何时处于中断屏蔽状态？
+   
+    系统在STI之前处于中断屏蔽状态
    - 如果系统处于中断屏蔽状态，如何让其中断使能？
+   
+    执行STI命令使其开中断
    - 系统产生中断后，CPU会做哪些事情？（在没有软件帮助的情况下）
+   
+    cpu会保存现场，记录pc，sp以及寄存器的值到系统堆栈中，可能改变用户态到核心态，然后改变pc到中断处理程序。
    - CPU执行RTI指令的具体完成工作是哪些？
+   
+    rti指令是cpu执行完中断处理程序时，如果这时候还有挂起的中断，去处理这些中断；否则返回到中断现场，可能涉及核心态到用户态的转变，然后恢复中断现场，包括pc，sp以及寄存器等等。
 
 [HARD]分析和实验os1/os3.c，需要完成的内容包括： 
 -[X]
  
  - os1中的task1和task2的堆栈的起始和终止地址是什么？
+task1起始地址是124M，终止地址是代码段加数据段长度
+task2起始地址是task1_stack+50，终止地址是task1_stack
+
  - os1是如何实现任务切换的？
+当timer超时时，触发timeout中断此时调用中断处理向量alltraps函数，其中调用trap函数，trap函数会将当前堆栈指针sp保存到old中，将sp置为新的值，这样保存当前sp的值，设置sp到新的栈地址（该栈地址-12的位置为task0或者task1的代码入口），从而实现任务的切换。
+
  - os3中的task1和task2的堆栈的起始和终止地址是什么？
+
+
  - os3是如何实现任务切换的？
+ 
+
  - os3的用户态task能够破坏内核态的系统吗？
+ 能。
