@@ -86,7 +86,7 @@
 
 	tf是`current->tf`，即当前进程的trap frame。其中eax寄存器中存储系统调用号，用以区分不同的系统调用。系统调用的其他参数分别存储在edx/ecx/ebx/edi/esi存储器中，放入arg[0]~arg[5]。最后通过函数指针`syscalls[num](arg)`，根据系统调用号`num`调用不同的程序，并将返回值存入tf的reg_eax寄存器中，即a寄存器。
 
-	而在用户程序中，参数传递是通过调用汇编语句来实现的（类似：`"i" (T_SYSCALL)`），将各个寄存器赋予对应的值，再通过系统调用`"int %1;"`进入内核态。
+	而在用户程序中，参数传递是通过调用一系列汇编语句`asm volatile`来实现的（类似：`"i" (T_SYSCALL)`），将各个寄存器赋予对应的值，再通过系统调用`"int %1;"`进入内核态。
 	
 	
 
@@ -107,6 +107,10 @@
 	    	cprintf("SYSCALL\n"); // new printf
 	        syscall();
 	        break;
+
+	也可内核态解析系统调用时输出，即第一小问中的`kern/syscall/syscall.c`，此时可以根据`int num = tf->tf_regs.reg_eax;`判断不同的系统调用。
+
+		
  
 ## 3.6 请分析函数调用和系统调用的区别
  1. 请从代码编写和执行过程来说明。
