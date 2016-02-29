@@ -61,11 +61,38 @@
 ## 3.5 ucore系统调用分析
  1. ucore的系统调用中参数传递代码分析。
 
-	参数传递是通过调用汇编语句来实现的（类似：`"i" (T_SYSCALL)`），将各个寄存器赋予对应的值，再通过系统调用`"int %1;"`进入内核态。
+	参考`kern/syscall/syscall.c`：
+
+		void
+		syscall(void) {
+		    struct trapframe *tf = current->tf;
+		    uint32_t arg[5];
+		    int num = tf->tf_regs.reg_eax;
+		    if (num >= 0 && num < NUM_SYSCALLS) {
+		        if (syscalls[num] != NULL) {
+		            arg[0] = tf->tf_regs.reg_edx;
+		            arg[1] = tf->tf_regs.reg_ecx;
+		            arg[2] = tf->tf_regs.reg_ebx;
+		            arg[3] = tf->tf_regs.reg_edi;
+		            arg[4] = tf->tf_regs.reg_esi;
+		            tf->tf_regs.reg_eax = syscalls[num](arg);
+		            return ;
+		        }
+		    }
+		    print_trapframe(tf);
+		    panic("undefined syscall %d, pid = %d, name = %s.\n",
+		            num, current->pid, current->name);
+		}
+
+	tf是`current->tf`，即当前进程的trap frame。其中eax寄存器中存储系统调用号，用以区分不同的系统调用。系统调用的其他参数分别存储在edx/ecx/ebx/edi/esi存储器中，放入arg[0]~arg[5]。最后通过函数指针`syscalls[num](arg)`，根据系统调用号`num`调用不同的程序，并将返回值存入tf的reg_eax寄存器中，即a寄存器。
+
+	而在用户程序中，参数传递是通过调用汇编语句来实现的（类似：`"i" (T_SYSCALL)`），将各个寄存器赋予对应的值，再通过系统调用`"int %1;"`进入内核态。
+	
+	
 
  2. ucore的系统调用中返回结果的传递代码分析。
 
-	`"=a" (ret)`，内核态将返回结果存在a寄存器中，作为返回值传递回来。
+	同上，`"=a" (ret)`，内核态将返回结果存在a寄存器中，作为返回值传递回来。
 
  3. 以ucore lab8的answer为例，分析ucore 应用的系统调用编写和含义。
 
@@ -74,12 +101,12 @@
 
  4. 以ucore lab8的answer为例，尝试修改并运行ucore OS kernel代码，使其具有类似Linux应用工具`strace`的功能，即能够显示出应用程序发出的系统调用，从而可以分析ucore应用的系统调用执行过程。
 
-在系统调用的同一调用处输出相关信息，修改`kern/trap/trap.c`：
+	在系统调用的同一调用处输出相关信息，修改`kern/trap/trap.c`：
     
-	case T_SYSCALL:
-    	cprintf("SYSCALL\n"); // new printf
-        syscall();
-        break;
+		case T_SYSCALL:
+	    	cprintf("SYSCALL\n"); // new printf
+	        syscall();
+	        break;
  
 ## 3.6 请分析函数调用和系统调用的区别
  1. 请从代码编写和执行过程来说明。
