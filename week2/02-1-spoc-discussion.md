@@ -60,6 +60,32 @@
  
 ## 3.5 ucore系统调用分析
  1. ucore的系统调用中参数传递代码分析。
+ ```
+  static inline int
+  syscall(int num, ...) {
+      va_list ap;
+      va_start(ap, num);
+      uint32_t a[MAX_ARGS];
+      int i, ret;
+      for (i = 0; i < MAX_ARGS; i ++) {
+          a[i] = va_arg(ap, uint32_t);
+      }
+      va_end(ap);
+  
+      asm volatile (
+          "int %1;"
+          : "=a" (ret)
+          : "i" (T_SYSCALL),
+            "a" (num),
+            "d" (a[0]),
+            "c" (a[1]),
+            "b" (a[2]),
+            "D" (a[3]),
+            "S" (a[4])
+          : "cc", "memory");
+      return ret;
+  }
+```
  1. ucore的系统调用中返回结果的传递代码分析。
  1. 以ucore lab8的answer为例，分析ucore 应用的系统调用编写和含义。
  1. 以ucore lab8的answer为例，尝试修改并运行ucore OS kernel代码，使其具有类似Linux应用工具`strace`的功能，即能够显示出应用程序发出的系统调用，从而可以分析ucore应用的系统调用执行过程。
