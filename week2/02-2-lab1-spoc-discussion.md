@@ -34,7 +34,7 @@
 
 		static int
 		sys_write(uint32_t arg[]) {
-			uint32_t cs = 0;
+		    uint32_t cs = 0;
 		    asm volatile("movl %%cs, %0\n" : "=r"(cs));
 		    cs &= 3;
 		    cprintf("kern: %d\n", cs); 
