@@ -5,7 +5,18 @@
 - 内核态时，CPU仅把eflags和中断返回指针cs，eip压入当前内核态堆栈
 用户态时，CPU会首先把原用户态堆栈指针ss和esp压入内核态堆栈，随后把标志积存器eflags的内容和返回位置cs，eip压入内核态堆栈。
 
-	中断程序统一入口`kern/trap/trapentry.S`中，将各个寄存器压入栈中，输出即可显示相关信息：
+	`kern/trap/trap.c`的`trap`中，将前后trapframe输出：
+
+		struct trapframe *otf = current->tf;
+		current->tf = tf;
+		bool in_kernel = trap_in_kernel(tf);
+		if (otf)
+			print_trapframe(otf);
+		print_trapframe(tf);
+		trap_dispatch(tf);
+
+
+	也可参考中断程序统一入口`kern/trap/trapentry.S`中，将各个寄存器压入栈中，输出即可显示相关信息：
 
 		#include <memlayout.h>
 		# vectors.S sends all traps here.
