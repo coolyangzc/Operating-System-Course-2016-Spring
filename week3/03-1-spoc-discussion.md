@@ -56,3 +56,101 @@ NOTICE
 伙伴分配器的一个极简实现
 http://coolshell.cn/tag/buddy
 ```
+
+最先匹配算法实现
+ - 思路：通过维护一个链表记录当前free的内存区域，malloc和free时通过修改链表实现，其中free时有表项的合并等等问题。
+ - 测试用例见main函数。
+
+		typedef unsigned int uint;
+		
+		union header {
+		  struct {
+		    union header *ptr;
+		    uint size;
+		  } s;
+		  long x;
+		};
+		
+		typedef union header Header;
+		
+		static Header b1, b2;
+		static Header *head = &b1, *tail = &b2;
+		
+		
+		Header*
+		free(void *ap)
+		{
+		  Header *bp, *p, *prevp = head;
+		
+		  bp = (Header*)ap - 1;
+			for (p = prevp->s.ptr; p != tail; prevp = p, p = p->s.ptr){
+				if (bp > p && bp < p->s.ptr)
+					break;
+			}
+			if (p == tail){
+				head->s.ptr = bp;
+				bp->s.ptr = tail;
+				return bp;
+			}
+			else{
+				  if(bp + bp->s.size == p->s.ptr){
+					bp->s.size += p->s.ptr->s.size;
+					bp->s.ptr = p->s.ptr->s.ptr;
+				  } else
+					bp->s.ptr = p->s.ptr;
+				
+				  if(p + p->s.size == bp){
+					p->s.size += bp->s.size;
+					p->s.ptr = bp->s.ptr;
+					return p;
+				  } else{
+					p->s.ptr = bp;
+					return bp;
+				  }
+			}
+		}
+		
+		static Header*
+		morecore(uint nu)
+		{
+		  char *p;
+		  Header *hp;
+		
+		  if(nu < 4096)
+		    nu = 4096;
+		  p = sbrk(nu * sizeof(Header));
+		  if(p == (char*)-1)
+		    return 0;
+		  hp = (Header*)p;
+		  hp->s.size = nu;
+		  return free((void*)(hp + 1)) + 1;
+		}
+		
+		void*
+		malloc(uint nbytes)
+		{
+		  Header *p, *prevp = head;
+		  uint nunits;
+		
+		  nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
+			for (p = prevp->s.ptr; p != tail; prevp = p, p = p->s.ptr){
+				if (p->s.size >= nunits){
+					  if(p->s.size == nunits)
+						prevp->s.ptr = p->s.ptr;
+					  else {
+						p->s.size -= nunits;
+						p += p->s.size;
+						p->s.size = nunits;
+					  }
+					  return (void*)(p + 1);
+				}
+			}
+			return (void*)morecore(nunits);
+		}
+		
+		void main(){
+			head->s.ptr = tail;
+			Header* f = (Header*)malloc(1000);
+			free((void*) f);
+			return;
+		}
