@@ -1,15 +1,15 @@
-// os5.c -- 
+// os5.c --
 
 #include <u.h>
 
 enum {
   PAGE    = 4096,       // page size
   NOFILE  = 16,         // open files per process
-  USRSTART= 0x40000000, // start of user virt address space  
-  USREND  = 0x40100000, // end of user virt address space   
-  USRPHY  = 32*1024*1024, //  start of user phy address space 
+  USRSTART= 0x40000000, // start of user virt address space
+  USREND  = 0x40100000, // end of user virt address space
+  USRPHY  = 32*1024*1024, //  start of user phy address space
   KERSTART= 0xc0000000, // start of kerne address space
-  KEREND  = 0xc4000000, // end of kernel address space  
+  KEREND  = 0xc4000000, // end of kernel address space
   P2V     = +KERSTART,   // turn a physical address into a virtual address
   V2P     = -KERSTART,   // turn a virtual address into a physical address
   STACKSZ = 0x100000,   // user stack size (1MB)
@@ -38,7 +38,7 @@ enum { // processor fault codes
   FIPAGE, // page fault on opcode fetch
   FWPAGE, // page fault on write
   FRPAGE, // page fault on read
-  USER=16 // user mode exception 
+  USER=16 // user mode exception
 };
 
 
@@ -138,19 +138,25 @@ alltraps()
 setup_user_paging()
 {
   //YOUR CODE: lec7-spoc challenge-part2
-  pg_dir[256] = pg_dir[768 + 8];
+  int i;
+  int *user_pg = pg_tbl[15] + 1024;
+  pg_dir[256] = (int)user_pg | PTE_P | PTE_W | PTE_U;
+  for (i = 0; i < 256; i++)
+    user_pg[i] = USRPHY + (i << 12) | PTE_P | PTE_W | PTE_U;
+  for (i = 256; i < 1024; i++)
+    user_pg[i] = 0;
 }
-  
+
 setup_kernel_paging()
 {
   //YOUR CODE: lec7-spoc challenge-part1
   int i;
-  
+
   pg_dir = (int *)((((int)&pg_mem) + 4095) & -4096);
   pg_tbl[0] = pg_dir + 1024;
   for (i=1; i<16; i++)
     pg_tbl[i] = pg_tbl[i-1] + 1024;
-  
+
   for (i=0;i<1024;i++) pg_dir[i] = 0;
 
   for (i=0;i<16;i++)
@@ -165,19 +171,19 @@ main()
   int *ksp;// temp kernel stack pointer
   static char kstack[256]; // temp kernel stack
   static int endbss;     // last variable in bss segment
-  int t, d; 
-  
+  int t, d;
+
   current = 0;
   ivec(alltraps);
-  
+
   asm(STI);
-  
+
   printf("test timer...");
   t = 0;
   stmr(10000);
   while (!current) t++;
   printf("(t=%d)...ok\n",t);
-  
+
   printf("test bad physical address...");
   t = *(int *)0x20000000;
   printf("...ok\n");
@@ -189,26 +195,26 @@ main()
   // reposition stack within first 16M
   asm(LI, 4*1024*1024); // a = 4M
   asm(SSP); // sp = a
-  printf("set page table....\n"); 
+  printf("set page table....\n");
   setup_kernel_paging();
   setup_user_paging();
-  printf("set page table over\n"); 
-  
+  printf("set page table over\n");
+
   // turn on paging
   // set pg dir based_addr
   pdir(pg_dir);
   // enable page
   spage(1);
-  
+
   printf("kernel and user map...ok\n");
-  
+
   printf("test kernel page fault read 1...\n");
   *(int *)(KERSTART+4) = *(int *)(KERSTART);
   printf("...kernel ok 1 \n");
 
   printf("test user page fault read 1...\n");
   *(int *)(4) = *(int *)(USRSTART);
-  printf("..%d, .user ok 1 \n",  *(int *)(4));  
+  printf("..%d, .user ok 1 \n",  *(int *)(4));
 
   halt(0);
 }
