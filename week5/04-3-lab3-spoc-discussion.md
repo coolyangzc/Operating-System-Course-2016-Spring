@@ -5,7 +5,7 @@
 ---
 (1)(spoc) 请参考lab3_result的代码，思考如何在lab3_results中实现clock算法，给出你的概要设计方案。可4人一个小组。要求说明你的方案中clock算法与LRU算法上相比，潜在的性能差异性。进而说明在lab3的LRU算法实现的可能性评价（给出理由）。
 
-现有的`swap_manager`框架并不足以支持`extended clock`页替换算法，因为只有`_fifo_swap_out_victim`、`_fifo_swap_out_victim`而并没有供访问页面时调用的函数。需要在此基础上增加访问与修改页面时调用的函数，在该函数中修改访问/修改页面的访问位或修改位。
+现有的`swap_manager`框架并不足以支持`extended clock`页替换算法，因为只有`_fifo_map_swappable`、`_fifo_swap_out_victim`而并没有供访问页面时调用的函数。需要在此基础上增加访问与修改页面时调用的函数，在该函数中修改访问/修改页面的访问位或修改位。
 
 clock算法与LRU相比：
 
