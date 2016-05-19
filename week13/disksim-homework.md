@@ -86,6 +86,8 @@ REQUESTS ['10', '11', '12', '13', '24', '1']
 ```
 请回答每个磁盘请求序列的IO访问时间
 
+设计`nullSeek`变量表示`SCAN`和`C-SCAN`磁盘调度策略中的空转部分。
+
 >python disksim-homework.py -a 10,11,12,13,24,1 -c -p SCAN
 
 	REQUESTS ['10', '11', '12', '13', '24', '1']
