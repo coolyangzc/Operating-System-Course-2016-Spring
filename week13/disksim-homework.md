@@ -86,3 +86,46 @@ REQUESTS ['10', '11', '12', '13', '24', '1']
 ```
 请回答每个磁盘请求序列的IO访问时间
 
+>python disksim-homework.py -a 10,11,12,13,24,1 -c -p SCAN
+
+	REQUESTS ['10', '11', '12', '13', '24', '1']
+	
+	Block:  10  Seek:  0  Rotate:105  Transfer: 30  Total: 135
+	Block:  11  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:   1  Seek:  0  Rotate: 30  Transfer: 30  Total:  60
+	Block:  12  Seek: 40  Rotate:260  Transfer: 30  Total: 330
+	Block:  13  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  24  Seek:120  Rotate:180  Transfer: 30  Total: 330
+	
+	TOTALS      Seek:160  Rotate:575  Transfer:180  Total: 915
+
+>python disksim-homework.py -a 10,11,12,13,24,1 -c -p C-SCAN
+
+	REQUESTS ['10', '11', '12', '13', '24', '1']
+	
+	Block:  10  Seek:  0  Rotate:105  Transfer: 30  Total: 135
+	Block:  11  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:   1  Seek:  0  Rotate: 30  Transfer: 30  Total:  60
+	Block:  24  Seek: 80  Rotate:220  Transfer: 30  Total: 330
+	Block:  12  Seek: 40  Rotate:290  Transfer: 30  Total: 360
+	Block:  13  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	
+	TOTALS      Seek:120  Rotate:645  Transfer:180  Total: 945
+
+为了更好地展示`C-SCAN`磁盘调度策略，可以执行如下测例：
+>python disksim-homework.py -a 12,13,14,15,16,17,18,19,20,21,22,23 -G -p C-SCAN
+
+	REQUESTS ['12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23']
+	
+	Block:  23  Seek:120  Rotate: 15  Transfer: 30  Total: 165
+	Block:  12  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  13  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  14  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  15  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  16  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  17  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  18  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  19  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  20  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  21  Seek:  0  Rotate:  0  Transfer: 30  Total:  30
+	Block:  22  Seek:  0  Rotate:  0  Transfer: 30  Total:  30

@@ -33,7 +33,7 @@ STATE_DONE   = 4
 #
 
 class Disk:
-    def __init__(self, addr, addrDesc, lateAddr, lateAddrDesc,
+    def __init__(self, addr, addrDesc, lateAddr, lateAddrDesc, direction,
                  policy, seekSpeed, rotateSpeed, skew, window, compute,
                  graphics, zoning):
         self.addr              = addr
@@ -48,6 +48,8 @@ class Disk:
         self.compute           = compute
         self.graphics          = graphics
         self.zoning            = zoning
+        self.direction         = direction
+        self.nullSeek          = False
 
         # figure out zones first, to figure out the max possible request
         self.InitBlockLayout()
@@ -433,25 +435,43 @@ class Disk:
             return
         self.armTarget   = track
         self.armTargetX1 = self.spindleX - self.tracks[track] - (self.trackWidth / 2.0)
-        if track >= self.armTrack:
+        if self.nullSeek:
+            self.armSpeed = self.armSpeedBase * self.direction
+        elif track >= self.armTrack:
             self.armSpeed = self.armSpeedBase
         else:
             self.armSpeed = - self.armSpeedBase
 
     def DoneWithSeek(self):
+        
         # move the disk arm
         self.armX1  += self.armSpeed
         self.armX2  += self.armSpeed
         self.headX1 += self.armSpeed
         self.headX2 += self.armSpeed
+        
+        if self.nullSeek:
+            if self.policy == "SCAN":
+                if (self.armX1 + self.armSpeed <= self.spindleX - self.tracks[0] - (self.trackWidth / 2.0)):
+                    self.nullSeek = False
+                    self.armSpeed = - self.armSpeed
+            elif self.policy == "C-SCAN":
+                if (self.armX1 + self.armSpeed <= self.spindleX - self.tracks[0] - (self.trackWidth / 2.0)):
+					self.armSpeed = - self.armSpeed
+					self.armX1 += self.armSpeed * 2
+                if (self.armX1 >= self.spindleX - self.tracks[2] - (self.trackWidth / 2.0)):
+                    self.nullSeek = False
+                    self.armSpeed = - self.armSpeed
         # update it on screen
         if self.graphics:
             self.canvas.coords(self.armID,  self.armX1,  self.armY1,  self.armX2,  self.armY2)
             self.canvas.coords(self.headID, self.headX1, self.headY1, self.headX2, self.headY2)
         # check if done
-        if (self.armSpeed > 0.0 and self.armX1 >= self.armTargetX1) or (self.armSpeed < 0.0 and self.armX1 <= self.armTargetX1):
-            self.armTrack = self.armTarget
-            return True
+        
+        if not self.nullSeek:
+            if (self.armSpeed > 0.0 and self.armX1 >= self.armTargetX1) or (self.armSpeed < 0.0 and self.armX1 <= self.armTargetX1):
+                self.armTrack = self.armTarget
+                return True
         return False
 
     def DoSATF(self, rList):
@@ -468,14 +488,23 @@ class Disk:
             # print 'track', track, 'angle', angle
 
             # estimate seek time
-            dist     = int(math.fabs(self.armTrack - track))
-            seekEst  = Decimal(self.trackWidth / self.armSpeedBase) * dist
+            
+            if self.nullSeek:
+                if self.policy == "SCAN":
+                    dist     = int(math.fabs(self.armTrack - track))
+                    seekEst  = Decimal(self.trackWidth / self.armSpeedBase) * (dist + self.armTrack * 2)
+                elif self.policy == "C-SCAN":
+                    dist     = 2 - track
+                    seekEst  = Decimal(self.trackWidth / self.armSpeedBase) * (dist + self.armTrack + 2)
+            else:
+                dist     = int(math.fabs(self.armTrack - track))
+                seekEst  = Decimal(self.trackWidth / self.armSpeedBase) * dist
 
             # estimate rotate time
             angleOffset    = self.blockAngleOffset[track]
             angleAtArrival = (Decimal(self.angle) + (seekEst * self.rotateSpeed))
             while angleAtArrival > 360.0:
-                angleAtArrival -= 360.0
+                angleAtArrival -= Decimal(360.0)
             rotDist        = Decimal((angle - angleOffset) - angleAtArrival)
             while rotDist > 360.0:
                 rotDist -= Decimal(360.0)
@@ -524,6 +553,79 @@ class Disk:
                 trackList.append((block, index))
         assert(trackList != [])
         return trackList
+        
+    def DoSCAN(self, rList):
+        minDist = MAXTRACKS
+        trackList = []
+        
+        for (block, index) in rList:
+            if self.requestState[index] == STATE_DONE:
+                continue
+            track = self.blockToTrackMap[block]
+            dist = (track - self.armTrack) * self.direction;
+            if dist < 0:
+                continue;
+            if dist < minDist:
+                trackList = []
+                trackList.append((block, index))
+                minDist = dist
+            elif dist == minDist:
+                trackList.append((block, index))
+        if trackList:
+            return trackList
+        
+        self.nullSeek = True
+        
+        for (block, index) in rList:
+            if self.requestState[index] == STATE_DONE:
+                continue
+            track = self.blockToTrackMap[block]
+            dist = (track - self.armTrack) * self.direction * -1;
+            if dist < minDist:
+                trackList = []
+                trackList.append((block, index))
+                minDist = dist
+            elif dist == minDist:
+                trackList.append((block, index))
+        
+        assert(trackList != [])
+        return trackList
+        
+    def DoCSCAN(self, rList):
+        minDist = MAXTRACKS
+        trackList = []
+        
+        for (block, index) in rList:
+            if self.requestState[index] == STATE_DONE:
+                continue
+            track = self.blockToTrackMap[block]
+            dist = (track - self.armTrack) * self.direction;
+            if dist < 0:
+                continue;
+            if dist < minDist:
+                trackList = []
+                trackList.append((block, index))
+                minDist = dist
+            elif dist == minDist:
+                trackList.append((block, index))
+        if trackList:
+            return trackList
+        self.nullSeek = True
+        
+        for (block, index) in rList:
+            if self.requestState[index] == STATE_DONE:
+                continue
+            track = self.blockToTrackMap[block]
+            dist = track * self.direction;
+            if dist < minDist:
+                trackList = []
+                trackList.append((block, index))
+                minDist = dist
+            elif dist == minDist:
+                trackList.append((block, index))
+        
+        assert(trackList != [])
+        return trackList
 
     def UpdateWindow(self):
         if self.fairWindow == -1 and self.currWindow > 0 and self.currWindow < len(self.requestQueue):
@@ -565,6 +667,12 @@ class Disk:
             # first, find all the blocks on a given track (given window constraints)
             trackList = self.DoSSTF(self.requestQueue[0:self.GetWindow()])
             # then, do SATF on those blocks (otherwise, will not do them in obvious order)
+            (self.currentBlock, self.currentIndex) = self.DoSATF(trackList)
+        elif self.policy == "SCAN":
+            trackList = self.DoSCAN(self.requestQueue[0:self.GetWindow()])
+            (self.currentBlock, self.currentIndex) = self.DoSATF(trackList)
+        elif self.policy == "C-SCAN":
+            trackList = self.DoCSCAN(self.requestQueue[0:self.GetWindow()])
             (self.currentBlock, self.currentIndex) = self.DoSATF(trackList)
         else:
             print 'policy (%s) not implemented' % self.policy
@@ -685,6 +793,7 @@ parser.add_option('-G', '--graphics',        default=False,       help='Turn on 
 parser.add_option('-l', '--lateAddr',        default='-1',        help='Late: request list (comma-separated) [-1 -> random]',     action='store', type='string', dest='lateAddr')
 parser.add_option('-L', '--lateAddrDesc',    default='0,-1,0',    help='Num requests, max request (-1->all), min request',        action='store', type='string', dest='lateAddrDesc')
 parser.add_option('-c', '--compute',         default=False,       help='Compute the answers',                                     action='store_true',           dest='compute')
+parser.add_option('-d', '--direction',       default='-1',        help='Arm initial direction for SCAN/C-SCAN',                   action='store', type='int',    dest='direction')
 (options, args) = parser.parse_args()
 
 print 'OPTIONS seed', options.seed
@@ -711,7 +820,7 @@ if options.graphics and options.compute == False:
     options.compute = True
 
 # set up simulator info
-d = Disk(addr=options.addr, addrDesc=options.addrDesc, lateAddr=options.lateAddr, lateAddrDesc=options.lateAddrDesc,
+d = Disk(addr=options.addr, addrDesc=options.addrDesc, lateAddr=options.lateAddr, lateAddrDesc=options.lateAddrDesc, direction = options.direction,
          policy=options.policy, seekSpeed=Decimal(options.seekSpeed), rotateSpeed=Decimal(options.rotateSpeed),
          skew=options.skew, window=options.window, compute=options.compute, graphics=options.graphics, zoning=options.zoning)
 
